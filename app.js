@@ -8,10 +8,10 @@ var getToken = process.env.GET_TOKEN || '';
 var port = process.env.PORT || 3000;
 var maxHits = process.env.MAX_HITS || 1000;
 var messages = {
-    INVALID_TOKEN: 'SEA Source, Scorch, Scorch. FLATLINED, bitch. (invalid token)',
+    INVALID_TOKEN: 'Invalid token detected, deploying ICE\n↳ End the run',
     NO_QUERY: 'I can\'t find nothing, what\'s next? dividing by zero?',
     MULTIPLE_RESULTS: ' cards matched your search:',
-    NO_RESULTS: 'You access R&D but it doesn\'t hold what you\'re looking for',
+    NO_RESULTS: 'You successfully access R&D but it doesn\'t hold what you\'re looking for',
     TOO_MANY: ' results!? you tryna overflow my core buffers?'
 };
 
