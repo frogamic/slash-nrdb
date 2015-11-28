@@ -6,11 +6,13 @@ var cheerio = require('cheerio');
 var postToken = process.env.POST_TOKEN || '';
 var getToken = process.env.GET_TOKEN || '';
 var port = process.env.PORT || 3000;
+var maxHits = process.env.MAX_HITS || 1000;
 var messages = {
     INVALID_TOKEN: 'SEA Source, Scorch, Scorch. FLATLINED, bitch. (invalid token)',
-    NO_QUERY: 'You have to tell me what to look for, mate.',
-    MULTIPLE_RESULTS: 'Multiple cards matched your search:',
-    NO_RESULTS: 'You access R&D and see nothing of interest. (no matches)'
+    NO_QUERY: 'I can\'t find nothing, what\'s next? dividing by zero?',
+    MULTIPLE_RESULTS: ' cards matched your search:',
+    NO_RESULTS: 'You access R&D but it doesn\'t hold what you\'re looking for',
+    TOO_MANY: ' results!? you tryna overflow my core buffers?'
 };
 
 var app = express();
@@ -82,14 +84,20 @@ console.info('Listening on port %s', port);
  */
 function formatMultiple (matches) {
     var o = '';
-    o += messages.MULTIPLE_RESULTS + '\n\n';
-    matches.text().split('\n').map(function (s) {
+    matches = matches.text().split('\n').map(function (s) {
         return clean(s);
     }).filter(function (s) {
         return s.length > 0;
-    }).map(function (s) {
-        o += '  • ' + s + '\n';
     });
+    o += matches.length;
+    if (matches.length > maxHits) {
+        o += messages.TOO_MANY;
+    } else {
+        o += messages.MULTIPLE_RESULTS + '\n\n';
+        matches.map(function (s) {
+            o += '  • ' + s + '\n';
+        });
+    }
     return o;
 }
 
