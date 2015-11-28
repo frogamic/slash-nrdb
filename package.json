@@ -1,7 +1,7 @@
 {
   "name": "slash-nrdb",
   "version": "0.1.0",
-  "repository": "https://github.com/voodoochild/slash-nrdb",
+  "repository": "https://github.com/frogamic/slash-nrdb",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
