@@ -34,19 +34,8 @@ app.post('/', function (req, res) {
     }
 
     search(postData.text, function ($, panel) {
-        var o = '';
-        var flavor;
-        o += '*' + clean(panel.find('.panel-heading').text()).replace('♦', '◆') + '*\n';
-        o += clean(panel.find('.card-info').text()) + '\n';
-        panel.find('.card-text p').each(function (i, p) {
-            o += '> ' + clean($(p).text()) + '\n';
-        });
-        flavor = clean(panel.find('.card-flavor').text());
-        if (flavor.length) o += '_' + flavor + '_\n';
-        o += clean(panel.find('.card-illustrator').text()) + '\n';
-        o += panel.find('a.card-title').attr('href');
         res.json({
-            text: o
+            text: formatSingle($, panel)
         });
     }, function (matches) {
         res.json({
@@ -73,16 +62,7 @@ app.get('/', function (req, res) {
     }
 
     search(text, function ($, panel) {
-        var flavor;
-        res.write('*' + clean(panel.find('.panel-heading').text()).replace('♦', '◆') + '*\n');
-        res.write(clean(panel.find('.card-info').text()) + '\n');
-        panel.find('.card-text p').each(function (i, p) {
-            res.write('> ' + clean($(p).text()) + '\n');
-        });
-        flavor = clean(panel.find('.card-flavor').text());
-        if (flavor.length) res.write(flavor + '\n');
-        res.write(clean(panel.find('.card-illustrator').text()) + '\n');
-        res.write(panel.find('a.card-title').attr('href'));
+        res.write(formatSingle($, panel));
         res.end();
     }, function (matches) {
         res.write(formatMultiple(matches));
@@ -100,7 +80,6 @@ console.info('Listening on port %s', port);
  *
  * @param   matches The array of cards matching the query, returned from NRDB
  */
-
 function formatMultiple (matches) {
     var o = '';
     o += messages.MULTIPLE_RESULTS + '\n\n';
@@ -111,6 +90,24 @@ function formatMultiple (matches) {
     }).map(function (s) {
         o += '  • ' + s + '\n';
     });
+    return o;
+}
+
+/**
+ * Converts a single card from NetrunnerDB into text to be returned to slack.
+ */
+function formatSingle ($, panel) {
+    var o = '';
+    var flavor;
+    o += '*' + clean(panel.find('.panel-heading').text()).replace('♦', '◆') + '*\n';
+    o += clean(panel.find('.card-info').text()) + '\n';
+    panel.find('.card-text p').each(function (i, p) {
+        o += '> ' + clean($(p).text()) + '\n';
+    });
+    flavor = clean(panel.find('.card-flavor').text());
+    if (flavor.length) o += '_' + flavor + '_\n';
+    o += clean(panel.find('.card-illustrator').text()) + '\n';
+    o += panel.find('a.card-title').attr('href');
     return o;
 }
 
