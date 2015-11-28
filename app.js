@@ -49,17 +49,8 @@ app.post('/', function (req, res) {
             text: o
         });
     }, function (matches) {
-        var o = '';
-        o += messages.MULTIPLE_RESULTS + '\n\n';
-        matches.text().split('\n').map(function (s) {
-            return clean(s);
-        }).filter(function (s) {
-            return s.length > 0;
-        }).map(function (s) {
-            o += '  • ' + s + '\n';
-        });
         res.json({
-            text: o
+            text: formatMultiple(matches)
         });
     }, function () {
         res.json({
@@ -94,16 +85,7 @@ app.get('/', function (req, res) {
         res.write(panel.find('a.card-title').attr('href'));
         res.end();
     }, function (matches) {
-        res.write(messages.MULTIPLE_RESULTS);
-        res.write('\n\n');
-        matches.text().split('\n').map(function (s) {
-            return clean(s);
-        }).filter(function (s) {
-            return s.length > 0;
-        }).map(function (s) {
-            res.write('  • ' + s);
-            res.write('\n');
-        });
+        res.write(formatMultiple(matches));
         res.end();
     }, function () {
         res.send(messages.NO_RESULTS);
@@ -112,6 +94,25 @@ app.get('/', function (req, res) {
 
 app.listen(port);
 console.info('Listening on port %s', port);
+
+/**
+ * Converts a list of cards as returned by NetrunnerDB into a text list to be returned to slack
+ *
+ * @param   matches The array of cards matching the query, returned from NRDB
+ */
+
+function formatMultiple (matches) {
+    var o = '';
+    o += messages.MULTIPLE_RESULTS + '\n\n';
+    matches.text().split('\n').map(function (s) {
+        return clean(s);
+    }).filter(function (s) {
+        return s.length > 0;
+    }).map(function (s) {
+        o += '  • ' + s + '\n';
+    });
+    return o;
+}
 
 /**
  * Clean a string by removing tab characters and trailing whitespace
@@ -166,6 +167,7 @@ function search (text, oneResult, manyResults, noResults, error) {
         forceful = true;
         text = text.substr(1);
     }
+
 
     text = text.toLowerCase();
     request('http://netrunnerdb.com/find/?q=' + text, function (error, response, body) {
