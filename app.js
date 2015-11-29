@@ -14,6 +14,26 @@ var messages = {
     NO_RESULTS: 'You successfully access R&D but it doesn\'t hold what you\'re looking for',
     TOO_MANY: ' results!? you tryna overflow my core buffers?'
 };
+var shorthands = {
+    "tldr":"tl;dr",
+    "pe":"jinteki: personal evolution",
+    "babw":"weyland: building a better world",
+    "bwbi":"weyland: because we built it",
+    "etf":"haas-bioroid: engineering the future",
+    "prepaid":"prepaid voicepad",
+    "ppvp":"prepaid voicepad",
+    "kit":"rielle \"kit\" peddler: transhuman",
+    "id":"identity",
+};
+var shorthandRegExp = RegExp(Object.keys(shorthands).reduce(function (pv, cv, ci, a) {
+    var o = pv;
+    if (ci !== 0)
+        o += "\\b|\\b";
+    o += cv;
+    if(ci == a.length-1)
+        o+='\\b/g';
+    return o;
+}, '/\\b'));
 
 var app = express();
 app.use(bodyParser.urlencoded({extended: true}));
@@ -174,7 +194,10 @@ function search (text, oneResult, manyResults, noResults, error) {
     }
 
 
-    text = text.toLowerCase();
+    text = text.replace(shorthandRegExp, function(sh){
+        return shorthands[sh];
+    }).toLowerCase();
+
     request('http://netrunnerdb.com/find/?q=' + text, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             var $ = cheerio.load(substitute(body));
