@@ -68,6 +68,13 @@ function sendResponse (text, correctToken, responder, trigger) {
         return responder(messages.NO_QUERY);
     }
     
+    if (trigger && trigger == 'decklist:') {
+        return decklist(text, function (deck) {
+            responder(formatDeck(deck));
+        }, function () {
+            responder(messages.NO_RESULTS);
+        });
+    }
     search(text, function ($, panel) {
         responder(formatSingle($, panel));
     }, function (matches) {
@@ -211,6 +218,32 @@ function search (text, oneResult, manyResults, noResults, error) {
         } else {
             error();
         }
+    });
+}
+
+function formatDeck (deck) {
+    var o = '*' + deck.name + '*';
+    o += ' by ' + deck.username;
+    o += ' (' + deck.creation.replace(/(\d+)-(\d+)-(\d+).*/, "$3/$2/$1") + ')\n';
+    return o;
+}
+
+function decklist (text, result, noResults, error) {
+    result = result || _noop;
+    noResults = noResults || _noop;
+    error = error || _noop;
+
+    text = text.replace(/(.*netrunnerdb.com\/en\/decklist\/)?(\d+)(\/.*)?/i,"$2");
+
+    request('http://netrunnerdb.com/api/decklist/' + text, function (error, response, body) {
+        if (error || response.statusCode != 200) {
+            if (response.statusCode == 404)
+                return noResults();
+            return error();
+        }
+
+        var deck = JSON.parse(body);
+        result(deck);
     });
 }
 
