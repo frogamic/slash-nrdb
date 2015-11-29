@@ -17,13 +17,15 @@ var messages = {
 var shorthands = {
     "tldr":"tl;dr",
     "pe":"jinteki: personal evolution",
+    "rp":"jinteki: replicating perfection",
+    "neh":"nbn: near earth hub",
+    "twiy":"nbn: the world is yours\*",
     "babw":"weyland: building a better world",
     "bwbi":"weyland: because we built it",
+    "hb:etf":"haas-bioroid: engineering the future",
     "etf":"haas-bioroid: engineering the future",
-    "prepaid":"prepaid voicepad",
     "ppvp":"prepaid voicepad",
     "kit":"rielle \"kit\" peddler: transhuman",
-    "id":"identity",
 };
 var shorthandRegExp = RegExp(Object.keys(shorthands).reduce(function (pv, cv, ci, a) {
     var o = pv;
