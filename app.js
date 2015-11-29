@@ -14,19 +14,7 @@ var messages = {
     NO_RESULTS: 'You successfully access R&D but it doesn\'t hold what you\'re looking for',
     TOO_MANY: ' results!? you tryna overflow my core buffers?'
 };
-var shorthands = {
-    "tldr":"tl;dr",
-    "pe":"jinteki: personal evolution",
-    "rp":"jinteki: replicating perfection",
-    "neh":"nbn: near earth hub",
-    "twiy":"nbn: the world is yours\*",
-    "babw":"weyland: building a better world",
-    "bwbi":"weyland: because we built it",
-    "hb:etf":"haas-bioroid: engineering the future",
-    "etf":"haas-bioroid: engineering the future",
-    "ppvp":"prepaid voicepad",
-    "kit":"rielle \"kit\" peddler: transhuman",
-};
+var shorthands = require('./shorthands.json');
 var shorthandRegExp = RegExp(Object.keys(shorthands).reduce(function (pv, cv, ci, a) {
     var o = pv;
     if (ci !== 0)
