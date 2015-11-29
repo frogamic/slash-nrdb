@@ -24,7 +24,6 @@ var shorthandRegExp = RegExp(Object.keys(shorthands).reduce(function (pv, cv, ci
         o+='\\b';
     return o;
 }, '\\b'),'i');
-console.log("using re: "+shorthandRegExp);
 
 var app = express();
 app.use(bodyParser.urlencoded({extended: true}));
@@ -32,61 +31,53 @@ app.use(bodyParser.urlencoded({extended: true}));
 // POST request returns JSON
 app.post('/', function (req, res) {
     if (!req.body) return res.sendStatus(400);
-
     var postData = req.body;
-    postData.text = clean(postData.text.replace(postData.trigger_word, ''));
 
-    if (postData.token !== postToken) {
-        return res.json({
-            text: messages.INVALID_TOKEN
-        });
-    } else if (!postData.text || !postData.text.length) {
-        return res.json({
-            text: messages.NO_QUERY
-        });
-    }
-
-    search(postData.text, function ($, panel) {
-        res.json({
-            text: formatSingle($, panel)
-        });
-    }, function (matches) {
-        res.json({
-            text: formatMultiple(matches)
-        });
-    }, function () {
-        res.json({
-            text: messages.NO_RESULTS
-        });
-    }, function () {
-        res.sendStatus(500);
-    });
+    sendResponse(postData.text, postData.token === postToken, function (o) {
+        if (o)
+            res.json({ text: o });
+        else
+            res.sendStatus(500);
+    }, postData.trigger_word);
 });
 
 // GET request returns plain text
 app.get('/', function (req, res) {
-    var text = req.query.text;
-    res.type('text/plain');
+    var getData = req.query;
 
-    if (req.query.token !== getToken) {
-        return res.send(messages.INVALID_TOKEN);
-    } else if (!text || !text.length) {
-        return res.send(messages.NO_QUERY);
-    }
-
-    search(text, function ($, panel) {
-        res.write(formatSingle($, panel));
-        res.end();
-    }, function (matches) {
-        res.write(formatMultiple(matches));
-        res.end();
-    }, function () {
-        res.send(messages.NO_RESULTS);
+    sendResponse(getData.text, getData.token === getToken, function (o) {
+        res.type('text/plain');
+        if (o)
+            res.send(o);
+        else
+            res.sendStatus(500);
     });
 });
 
 app.listen(port);
 console.info('Listening on port %s', port);
+
+function sendResponse (text, correctToken, responder, trigger) {
+    if (trigger) {
+        text = clean(text.replace(trigger, ''));
+    }
+
+    if (!correctToken) {
+        return responder(messages.INVALID_TOKEN);
+    } else if (!text || !text.length) {
+        return responder(messages.NO_QUERY);
+    }
+    
+    search(text, function ($, panel) {
+        responder(formatSingle($, panel));
+    }, function (matches) {
+        responder(formatMultiple(matches));
+    }, function () {
+        responder(messages.NO_RESULTS);
+    }, function () {
+        responder(null);
+    });
+}
 
 /**
  * Converts a list of cards as returned by NetrunnerDB into a text list to be returned to slack
