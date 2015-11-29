@@ -184,10 +184,13 @@ function search (text, oneResult, manyResults, noResults, error) {
             if (panel && panel.length === 1) {
                 oneResult($, panel);
             } else if (matches.length) {
+                var found = false;
                 if (forceful) {
                     matches.each(function (i, m) {
                         m = $(m);
-                        if (clean(m.text()).toLowerCase() === text) {
+                        var re = RegExp('^'+text, 'i');
+                        if (!found && clean(m.text()).match(re)) {
+                            found = true;
                             request(m.find('a').attr('href'), function (error, response, body) {
                                 var $ = cheerio.load(substitute(body));
                                 oneResult($, $('.panel'));
