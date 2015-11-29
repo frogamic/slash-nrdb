@@ -33,9 +33,10 @@ var shorthandRegExp = RegExp(Object.keys(shorthands).reduce(function (pv, cv, ci
         o += "\\b|\\b";
     o += cv;
     if(ci == a.length-1)
-        o+='\\b/g';
+        o+='\\b';
     return o;
-}, '/\\b'));
+}, '\\b'),'i');
+console.log("using re: "+shorthandRegExp);
 
 var app = express();
 app.use(bodyParser.urlencoded({extended: true}));
