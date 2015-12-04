@@ -54,7 +54,7 @@ app.get('/', function (req, res) {
 
     sendResponse(getData.text, getData.token === getToken, function (o) {
         res.type('text/plain');
-         if (o) {
+        if (o) {
             res.write(o.text);
             if (o.attachments) {
                 if (o.attachments[0].title)
@@ -107,7 +107,7 @@ function formatMultiple ($, matches) {
     var hits = matches.length;
 
     if (hits > maxHits) {
-        return {'text': hits + messages.TO_MANY};
+        return {'text': hits + messages.TOO_MANY};
     }
 
     a.text = hits + messages.MULTIPLE_RESULTS;
