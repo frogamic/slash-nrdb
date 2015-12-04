@@ -26,7 +26,7 @@ var shorthandRegExp = new RegExp(Object.keys(shorthands).reduce(function (pv, cv
         o+='\\b';
     }
     return o;
-}, '\\b'),'i');
+}, '\\b'));
 
 var app = express();
 app.use(bodyParser.urlencoded({extended: true}));
@@ -215,9 +215,9 @@ function search (text, oneResult, manyResults, noResults, errorResult) {
     }
 
 
-    text = text.replace(shorthandRegExp, function(sh){
+    text = text.toLowerCase().replace(shorthandRegExp, function(sh){
         return shorthands[sh];
-    }).toLowerCase();
+    });
 
     request('http://netrunnerdb.com/find/?q=' + text, function (error, response, body) {
         if (error || response.statusCode !== 200) {
