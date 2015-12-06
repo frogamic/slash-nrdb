@@ -132,7 +132,7 @@ function formatCardInfo(info, faction) {
             info += '•';
         }
     }
-    info = info.replace(/^(.*?)(,|:)/, '*$1*$2');
+    info = info.replace(/^(.*?)(\n|:)/, '*$1*$2');
     info = info.replace(/Memory: (\d)/, ':_$1mu:');
     info = info.replace(/Strength: (\d+)/, '$1 Str');
     info = info.replace(/(?:Install|Cost): (\d+)/, '$1:_credit:');
