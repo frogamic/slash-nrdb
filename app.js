@@ -24,17 +24,20 @@ app.post('/', function (req, res) {
     }
     var postData = req.body;
 
+    // Ensure the request comes from an authorized source
     if (postData.token !== postToken) {
         return res.json({'text': messages.INVALID_TOKEN});
     }
+    // Ensure that the request contains a valid query
     if (!postData.text || !postData.text.length) {
         return res.json({'text': messages.NO_QUERY});
     }
-
+    // Remove the trigger word from the text
     if (postData.trigger_word){
         postData.text = postData.text.replace(postData.trigger_word + ' ', '');
     }
 
+    // Find the card(s)
     nrdb_cards.find(postData.text, messages, function (o) {
         if (o) {
             res.json(o);
@@ -49,16 +52,20 @@ app.post('/', function (req, res) {
 app.get('/', function (req, res) {
     var getData = req.query;
 
+    // Ensure the request comes from an authorized source
     if (getData.token !== getToken) {
         return res.send(messages.INVALID_TOKEN);
     }
+    // Ensure that the request contains a valid query
     if (!getData.text || !getData.text.length) {
         return res.json(messages.NO_QUERY);
     }
 
+    // Find the card(s)
     nrdb_cards.find(getData.text, messages, function (o) {
         res.type('text/plain');
         if (o) {
+            // Write out the contents of the response object as plain text
             res.write(o.text);
             if (o.attachments) {
                 if (o.attachments[0].title)
