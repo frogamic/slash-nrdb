@@ -73,7 +73,7 @@ function parseMultiple ($, matches, messages) {
     });
     o.attachments[0].fallback = 'NRDB results for multiple cards';
 
-    return a;
+    return o;
 }
 
 /**
@@ -100,7 +100,7 @@ function parseSingle ($, panel) {
     o.attachments[0].fallback = 'NRDB results for ' + title;
     o.attachments[0].mrkdwn_in = ['pretext', 'text'];
     o.attachments[0].color = colours[faction];
-    return a;
+    return o;
 }
 
 /**
