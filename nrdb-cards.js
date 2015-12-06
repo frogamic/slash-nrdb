@@ -84,7 +84,7 @@ function parseMultiple ($, matches, messages) {
  * @returns {Object} An object matching the Slack API requirement for text with attachments.
  */
 function parseSingle ($, panel) {
-    var o = {'text':'', 'attachments':[{pretext:'', text:''}]};
+    var o = {'text':'', 'attachments':[{pretext:''}]};
     // Replace the regular diamond since Slack converts this to an emoji
     var title = clean(panel.find('.panel-heading').text()).replace('♦', '◆');
     // Get the first word from the text containing the faction
@@ -95,7 +95,13 @@ function parseSingle ($, panel) {
     o.text +=  '|*' + title + '*>\n';
     o.attachments[0].pretext = formatCardInfo(info, faction);
     panel.find('.card-text p').each(function (i, p) {
-        o.attachments[0].text += clean($(p).text()) + '\n';
+        var text = clean($(p).text());
+        if (text.replace(/\s/, '').length) {
+            if (!o.attachments[0].text) {
+                o.attachments[0].text = '';
+            }
+            o.attachments[0].text += text + '\n';
+        }
     });
     o.attachments[0].fallback = 'NRDB results for ' + title;
     o.attachments[0].mrkdwn_in = ['pretext', 'text'];
