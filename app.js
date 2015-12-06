@@ -122,20 +122,22 @@ function formatMultiple ($, matches) {
 }
 
 function formatCardInfo(info, faction) {
-    info = info.replace(/^(.*?)( •|:)/, '*$1*$2');
-    info = info.replace(/ • /g,', ');
-    info += '\n' + faction;
+    info += ' • :_' + faction.toLowerCase() + ':';
     if (!info.match(/(Agenda|Identity)/)) {
-        var influence = parseInt(info.replace(/.*Influence: (\d+)/, '$1'));
-        info = info.replace(/, Influence: \d+/, '');
+        var influence = parseInt(info.replace(/.*Influence: (\d+).*/, '$1'));
+        info = info.replace(/ • Influence: \d+/, '');
         for (var i = 0; i < influence; i++) {
-            info += '•';
+            info += ':_influence:';
         }
     }
+    info = info.replace(/^(.*?)( •|:)/, '*$1*$2');
+    info = info.replace(/ • /, '\n');
     info = info.replace(/Memory: (\d)/, ':_$1mu:');
-    info = info.replace(/Strength: (\d+)/, '$1 str');
-    info = info.replace(/(?:Rez|Install|Cost): (\d+)/, '$1:_credit:');
-    info = info.replace(/, Adv: (\d+), Score: (\d+)/, ' ($1/$2)');
+    info = info.replace(/Strength: (\d+)/, '$1 Str');
+    info = info.replace(/(?:Install|Cost): (\d+)/, '$1:_credit:');
+    info = info.replace(/Rez: (\d+)/, '$1:_rez:');
+    info = info.replace(/Adv: (\d+)/, '$1 Adv');
+    info = info.replace(/Score: (\d+)/, '$1:_agenda:');
     info = info.replace(/Trash: (\d+)/, '$1:_trash:');
     info = info.replace(/Link: (\d+)/, '$1:_link:');
     return info;
@@ -147,7 +149,7 @@ function formatCardInfo(info, faction) {
 function formatSingle ($, panel) {
     var a = {'text':'', 'attachments':[{pretext:'', text:''}]};
     var title = clean(panel.find('.panel-heading').text()).replace('♦', '◆');
-    var faction = clean(panel.find('.card-illustrator').text()).replace(/ •.*/g, '');
+    var faction = clean(panel.find('.card-illustrator').text()).replace(/ .*/, '');
     var info = clean(panel.find('.card-info').text());
     a.text = '<' + panel.find('a.card-title').attr('href');
     a.text +=  '|*' + title + '*>\n';
