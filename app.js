@@ -35,8 +35,6 @@ app.post('/', function (req, res) {
         postData.text = postData.text.replace(postData.trigger_word + ' ', '');
     }
 
-    console.info(postData.text);
-
     nrdb_cards.find(postData.text, messages, function (o) {
         if (o) {
             res.json(o);

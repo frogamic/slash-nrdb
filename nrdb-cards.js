@@ -1,10 +1,22 @@
+/**
+ * Provides a method to find card(s) from NetrunnerDB.
+ * @module nrdb-cards
+ * @author Dominic Shelton, Kriss Watt
+ * @date 6-12-2015
+ */
 var request = require('request');
 var cheerio = require('cheerio');
 
+// The maximum number of card to list when multiple cards are found
 var maxHits = process.env.MAX_HITS || 200;
+// Faction colours for slack indents
 var colours = require('./colours.json');
+// A list of common card shorthands and their corresponding full names
 var shorthands = require('./shorthands.json');
-var shorthandRegExp = new RegExp(Object.keys(shorthands).reduce(function (pv, cv, ci, a) {
+// Regex generated from the shorthand keys to be used in find/replace
+// Only matches whole words
+var shorthandRegExp = new RegExp(
+        Object.keys(shorthands).reduce(function (pv, cv, ci, a) {
     var o = pv;
     if (ci !== 0) {
         o += '\\b|\\b';
@@ -16,11 +28,18 @@ var shorthandRegExp = new RegExp(Object.keys(shorthands).reduce(function (pv, cv
     return o;
 }, '\\b'));
 
+/**
+ * Finds one or more cards matching `text` from NetrunnerDB, and calls back
+ * `responder` with an object representing the results.
+ * @param {string}   text      The text to search for
+ * @param {Object}   messages  An object containing messages for responses
+ * @param {Function} responder A method that will be called with the response after searching
+ */
 exports.find = function (text, messages, responder) {
     search(text, function ($, panel) {
-        responder(formatSingle($, panel, messages));
+        responder(parseSingle($, panel, messages));
     }, function ($, matches) {
-        responder(formatMultiple($, matches, messages));
+        responder(parseMultiple($, matches, messages));
     }, function () {
         responder({'text': messages.NO_RESULTS});
     }, function () {
@@ -29,41 +48,87 @@ exports.find = function (text, messages, responder) {
 }
 
 /**
- * Converts a list of cards as returned by NetrunnerDB into a text list to be returned to slack
+ * Parses a multi-card search result from NetrunnerDB, converting it into an object to be returned
+ * to Slack.
  *
- * @param   matches The array of cards matching the query, returned from NRDB
+ * @param {Object} $         The cheerio object loaded from the NetrunnerDB search result
+ * @param {Object} matches   The array of HTML elements containing the titles of cards found
+ * @param {Object} messages  An object containing messages for responses
+ * @returns {Object} an object matching the Slack API requirement for text with attachments.
  */
-function formatMultiple ($, matches, messages) {
-    var a = {'text':'', 'attachments':[{text:''}]};
+function parseMultiple ($, matches, messages) {
+    var o = {'text':'', 'attachments':[{text:''}]};
     var hits = matches.length;
 
     if (hits > maxHits) {
         return {'text': hits + messages.TOO_MANY};
     }
 
-    a.text = hits + messages.MULTIPLE_RESULTS;
+    o.text = hits + messages.MULTIPLE_RESULTS;
     matches.each(function (i, e) {
         e = $(e);
         var text = clean(e.text());
         var url = e.find('a').attr('href');
-        a.attachments[0].text += '• <' + url + '|' + text + '>\n'; 
+        o.attachments[0].text += '• <' + url + '|' + text + '>\n'; 
     });
+    o.attachments[0].fallback = 'NRDB results for multiple cards';
 
     return a;
 }
 
+/**
+ * Parse a single card result from NetrunnerDB, converting it into an object to be returned to
+ * Slack
+ * @param {Object} $     The cheerio object loaded from the NetrunnerDB search result
+ * @param {Object} panel The HTML panel element containing the card information from NetrunnerDB
+ * @returns {Object} An object matching the Slack API requirement for text with attachments.
+ */
+function parseSingle ($, panel) {
+    var o = {'text':'', 'attachments':[{pretext:'', text:''}]};
+    // Replace the regular diamond since Slack converts this to an emoji
+    var title = clean(panel.find('.panel-heading').text()).replace('♦', '◆');
+    // Get the first word from the text containing the faction
+    var faction = clean(panel.find('.card-illustrator').text()).replace(/ .*/, '');
+    var info = clean(panel.find('.card-info').text());
+
+    o.text = '<' + panel.find('a.card-title').attr('href');
+    o.text +=  '|*' + title + '*>\n';
+    o.attachments[0].pretext = formatCardInfo(info, faction);
+    panel.find('.card-text p').each(function (i, p) {
+        o.attachments[0].text += clean($(p).text()) + '\n';
+    });
+    o.attachments[0].fallback = 'NRDB results for ' + title;
+    o.attachments[0].mrkdwn_in = ['pretext', 'text'];
+    o.attachments[0].color = colours[faction];
+    return a;
+}
+
+/**
+ * Format the card info for better display on slack
+ * @param {string} info      The card info as displayed on NetrunnerDB
+ * @param {string} faction   The card's faction
+ * @returns {string} The newly formatted card info string
+ */
 function formatCardInfo(info, faction) {
+    // Create a new line after the type/subtypes
     info = info.replace(/ • /, '\n');
+    // Replace the separator since the bullet is used for influence
     info = info.replace(/ • /g, ' - ');
+    // Append the faction emoji
     info += ' - :_' + faction.toLowerCase() + ':';
+    // Influence is handled differently for Agendas and Identities
     if (!info.match(/(Agenda|Identity)/)) {
         var influence = parseInt(info.replace(/(?:.|\s)*Influence: (\d+).*/, '$1'));
+        // Remove the influence text from the info
         info = info.replace(/ - Influence: \d+/, '');
+        // Add bullets after the faction symbol to show influence
         for (var i = 0; i < influence; i++) {
             info += '•';
         }
     }
+    // Bolden the primary type
     info = info.replace(/^(.*?)(\n|:)/, '*$1*$2');
+    // Replace most stat names with emoji
     info = info.replace(/Memory: (\d)/, ':_$1mu:');
     info = info.replace(/Strength: (\d+)/, '$1 Str');
     info = info.replace(/(?:Install|Cost): (\d+)/, '$1:_credit:');
@@ -72,43 +137,25 @@ function formatCardInfo(info, faction) {
     info = info.replace(/Score: (\d+)/, '$1:_agenda:');
     info = info.replace(/Trash: (\d+)/, '$1:_trash:');
     info = info.replace(/Link: (\d+)/, '$1:_link:');
-    info = info.replace(/Influence: (\d+)/, '$1•');
+    info = info.replace(/Deck: (\d+) - Influence: (\d+)/, '$1/$2');
     return info;
-}
-
-/**
- * Converts a single card from NetrunnerDB into text to be returned to slack.
- */
-function formatSingle ($, panel) {
-    var a = {'text':'', 'attachments':[{pretext:'', text:''}]};
-    var title = clean(panel.find('.panel-heading').text()).replace('♦', '◆');
-    var faction = clean(panel.find('.card-illustrator').text()).replace(/ .*/, '');
-    var info = clean(panel.find('.card-info').text());
-    a.text = '<' + panel.find('a.card-title').attr('href');
-    a.text +=  '|*' + title + '*>\n';
-    a.attachments[0].pretext = formatCardInfo(info, faction);
-    panel.find('.card-text p').each(function (i, p) {
-        a.attachments[0].text += clean($(p).text()) + '\n';
-    });
-    a.attachments[0].fallback = 'NRDB results for ' + title;
-    a.attachments[0].mrkdwn_in = ['pretext', 'text'];
-    a.attachments[0].color = colours[faction];
-    return a;
 }
 
 /**
  * Clean a string by removing tab characters and trailing whitespace
  *
- * @param String s
+ * @param {string} s
+ * @returns {string}
  */
 function clean (s) {
     return s.replace(/\s\s+/g, ' ').replace('\t', '').trim();
 }
 
 /**
- * Substitute icons and strong tags inside NRDB body text
+ * Substitute icons and strong tags inside card body text
  *
- * @param String body
+ * @param {string}  body
+ * @returns {string}
  */
 function substitute (body) {
     body = body.replace(/<span class="icon icon-click"><\/span>/g, ':_click:');
@@ -129,11 +176,11 @@ function substitute (body) {
 /**
  * Search NetrunnerDB for the specified string
  *
- * @param String text String to search with
- * @param Function oneResult Callback if one card is found
- * @param Function manyResults Callback if more than one card is found
- * @param Function noResults Callback if no cards are found
- * @param Function errorResult Callback if there was an error
+ * @param {string}   text string to search with
+ * @param {Function} oneResult Callback if one card is found
+ * @param {Function} manyResults Callback if more than one card is found
+ * @param {Function} noResults Callback if no cards are found
+ * @param {Function} errorResult Callback if there was an error
  */
 function search (text, oneResult, manyResults, noResults, errorResult) {
     oneResult = oneResult || _noop;
@@ -148,7 +195,7 @@ function search (text, oneResult, manyResults, noResults, errorResult) {
         text = text.substr(1);
     }
 
-
+    // Replace any shorthands in the search text with full names
     text = text.toLowerCase().replace(shorthandRegExp, function(sh){
         return shorthands[sh];
     });
@@ -158,7 +205,9 @@ function search (text, oneResult, manyResults, noResults, errorResult) {
             return errorResult();
         }
         var $ = cheerio.load(substitute(body));
+        // Attempt to find the single card info panel on the page
         var panel = $('.panel');
+        // Attempt to find the multiple card titles on the page
         var matches = $('[data-th="Title"]');
 
         if (panel && panel.length === 1) {
@@ -166,10 +215,14 @@ function search (text, oneResult, manyResults, noResults, errorResult) {
         } else if (matches.length) {
             var found = false;
             if (forceful) {
+                // Search through the matches for a card that starts with the exact search string
                 matches.each(function (i, m) {
+                    if (found) {
+                        return;
+                    }
                     m = $(m);
                     var re = new RegExp('^'+text, 'i');
-                    if (!found && clean(m.text()).match(re)) {
+                    if (clean(m.text()).match(re)) {
                         found = true;
                         request(m.find('a').attr('href'), function (error, response, body) {
                             var $ = cheerio.load(substitute(body));
