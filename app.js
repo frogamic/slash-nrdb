@@ -122,16 +122,17 @@ function formatMultiple ($, matches) {
 }
 
 function formatCardInfo(info, faction) {
-    info += ' • :_' + faction.toLowerCase() + ':';
+    info = info.replace(/ • /, '\n');
+    info = info.replace(/ • /g, ' - ');
+    info += ' - :_' + faction.toLowerCase() + ':';
     if (!info.match(/(Agenda|Identity)/)) {
-        var influence = parseInt(info.replace(/.*Influence: (\d+).*/, '$1'));
-        info = info.replace(/ • Influence: \d+/, '');
+        var influence = parseInt(info.replace(/(?:.|\s)*Influence: (\d+).*/, '$1'));
+        info = info.replace(/ - Influence: \d+/, '');
         for (var i = 0; i < influence; i++) {
-            info += ':_influence:';
+            info += '•';
         }
     }
-    info = info.replace(/^(.*?)( •|:)/, '*$1*$2');
-    info = info.replace(/ • /, '\n');
+    info = info.replace(/^(.*?)(,|:)/, '*$1*$2');
     info = info.replace(/Memory: (\d)/, ':_$1mu:');
     info = info.replace(/Strength: (\d+)/, '$1 Str');
     info = info.replace(/(?:Install|Cost): (\d+)/, '$1:_credit:');
@@ -140,6 +141,7 @@ function formatCardInfo(info, faction) {
     info = info.replace(/Score: (\d+)/, '$1:_agenda:');
     info = info.replace(/Trash: (\d+)/, '$1:_trash:');
     info = info.replace(/Link: (\d+)/, '$1:_link:');
+    info = info.replace(/Influence: (\d+)/, '$1•');
     return info;
 }
 
