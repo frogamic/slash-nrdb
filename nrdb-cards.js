@@ -116,22 +116,21 @@ function parseSingle ($, panel) {
  * @returns {string} The newly formatted card info string
  */
 function formatCardInfo(info, faction) {
-    // Create a new line after the type/subtypes
-    info = info.replace(/ • /, '\n');
-    // Replace the separator since the bullet is used for influence
-    info = info.replace(/ • /g, ' - ');
-    // Append the faction emoji
-    info += ' - :_' + faction.toLowerCase() + ':';
+    // Remove the bullets as separators
+    info = info.split(/ • /);
+    // Append the faction emoji after (sub)types
+    info[0] += ' - :_' + faction.toLowerCase() + ':';
     // Influence is handled differently for Agendas and Identities
-    if (!info.match(/(Agenda|Identity)/)) {
-        var influence = parseInt(info.replace(/(?:.|\s)*Influence: (\d+).*/, '$1'));
-        // Remove the influence text from the info
-        info = info.replace(/ - Influence: \d+/, '');
+    if (!info[0].match(/(Agenda|Identity)/)) {
+        // Remove the influence and get its numerical value
+        var influence = parseInt(info.pop().replace(/(?:.|\s)*Influence: (\d+).*/, '$1'));
         // Add bullets after the faction symbol to show influence
         for (var i = 0; i < influence; i++) {
-            info += '•';
+            info[0] += '•';
         }
     }
+    // Rejoin info text with newline after type/faction
+    info = info[0] + '\n' + info.slice(1).join(' - ');
     // Bolden the primary type
     info = info.replace(/^(.*?)(\n|:)/, '*$1*$2');
     // Replace most stat names with emoji
