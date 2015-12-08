@@ -174,8 +174,14 @@ function substitute (body) {
     body = body.replace(/<span class="icon icon-recurring-credit"><\/span>/g, ':_recurringcredit:');
     body = body.replace(/<span class="icon icon-subroutine"><\/span>/g, ':_subroutine:');
     body = body.replace(/<\/?strong>/g, '*');
-    body = body.replace(/<sup>/g, '^');
-    body = body.replace(/<\/sup>/g, '');
+    body = body.replace(/<sup>(?:\d+|X)<\/sup>/g, function(x){
+        x = x.replace(/<sup>|<\/sup>/g, '');
+        x = x.replace('X','ˣ');
+        x = x.replace(/\d/,function(d){
+            return ['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'][parseInt(d)];
+        });
+        return x;
+    });
     return body;
 }
 
