@@ -37,11 +37,11 @@ var shorthandRegExp = new RegExp(
  */
 exports.find = function (text, messages, responder) {
     search(text, function ($, panel) {
-        responder(parseSingle($, panel, messages));
+        responder([parseSingle($, panel, messages)]);
     }, function ($, matches) {
-        responder(parseMultiple($, matches, messages));
+        responder([parseMultiple($, matches, messages)]);
     }, function () {
-        responder({'text': messages.NO_RESULTS});
+        responder([{'title': messages.NO_RESULTS}]);
     }, function () {
         responder(null);
     });
@@ -54,25 +54,23 @@ exports.find = function (text, messages, responder) {
  * @param {Object} $         The cheerio object loaded from the NetrunnerDB search result
  * @param {Object} matches   The array of HTML elements containing the titles of cards found
  * @param {Object} messages  An object containing messages for responses
- * @returns {Object} an object matching the Slack API requirement for text with attachments.
+ * @returns {Object} an object with details about the card
  */
 function parseMultiple ($, matches, messages) {
-    var o = {'text':'', 'attachments':[{text:''}]};
+    var o = {'title':'', 'text':''};
     var hits = matches.length;
 
     if (hits > maxHits) {
-        return {'text': hits + messages.TOO_MANY};
+        o.title =  hits + messages.TOO_MANY;
+    } else {
+        o.title = hits + messages.MULTIPLE_RESULTS;
+        matches.each(function (i, e) {
+            e = $(e);
+            var text = clean(e.text());
+            var url = e.find('a').attr('href');
+            o.text += '• <' + url + '|' + text + '>\n'; 
+        });
     }
-
-    o.text = hits + messages.MULTIPLE_RESULTS;
-    matches.each(function (i, e) {
-        e = $(e);
-        var text = clean(e.text());
-        var url = e.find('a').attr('href');
-        o.attachments[0].text += '• <' + url + '|' + text + '>\n'; 
-    });
-    o.attachments[0].fallback = 'NRDB results for multiple cards';
-
     return o;
 }
 
@@ -81,31 +79,27 @@ function parseMultiple ($, matches, messages) {
  * Slack
  * @param {Object} $     The cheerio object loaded from the NetrunnerDB search result
  * @param {Object} panel The HTML panel element containing the card information from NetrunnerDB
- * @returns {Object} An object matching the Slack API requirement for text with attachments.
+ * @returns {Object} an object with details about the card
  */
 function parseSingle ($, panel) {
-    var o = {'text':'', 'attachments':[{pretext:''}]};
+    var o = {};
     // Replace the regular diamond since Slack converts this to an emoji
     var title = clean(panel.find('.panel-heading').text()).replace('♦', '◆');
     // Get the first word from the text containing the faction
     var faction = clean(panel.find('.card-illustrator').text()).replace(/ .*/, '');
-    var info = clean(panel.find('.card-info').text());
 
-    o.text = '<' + panel.find('a.card-title').attr('href');
-    o.text +=  '|*' + title + '*>\n';
-    o.attachments[0].pretext = formatCardInfo(info, faction);
+    o.title = '<' + panel.find('a.card-title').attr('href') + '|*' + title + '*>';
+    o.pretext = formatCardInfo(clean(panel.find('.card-info').text()), faction);
     panel.find('.card-text p').each(function (i, p) {
         var text = clean($(p).text());
         if (text.replace(/\s/, '').length) {
-            if (!o.attachments[0].text) {
-                o.attachments[0].text = '';
+            if (!o.text) {
+                o.text = '';
             }
-            o.attachments[0].text += text + '\n';
+            o.text += text + '\n';
         }
     });
-    o.attachments[0].fallback = 'NRDB results for ' + title;
-    o.attachments[0].mrkdwn_in = ['pretext', 'text'];
-    o.attachments[0].color = colours[faction];
+    o.color = colours[faction];
     return o;
 }
 
@@ -193,11 +187,12 @@ function substitute (body) {
  * @param {Function} noResults Callback if no cards are found
  * @param {Function} errorResult Callback if there was an error
  */
-function search (text, oneResult, manyResults, noResults, errorResult) {
+function search (texts, oneResult, manyResults, noResults, errorResult) {
     oneResult = oneResult || _noop;
     manyResults = manyResults || _noop;
     noResults = noResults || _noop;
     errorResult = errorResult || _noop;
+    var text = texts[0];
 
     // If forceful mode is on, pick any exact match when there are multiples
     var forceful = false;

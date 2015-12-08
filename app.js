@@ -23,7 +23,7 @@ app.post('/', function (req, res) {
         return res.sendStatus(400);
     }
     var postData = req.body;
-    var search = [];
+    var searches = [];
     var cardFinder = new RegExp('.*?\\[(.*?)\\]', 'g');
     var found;
 
@@ -37,20 +37,32 @@ app.post('/', function (req, res) {
     }
     // Detect and remove the trigger word from the text
     if (postData.text.match(/^nrdb:/i)) {
-        search.push(postData.text.replace(/\s*[^\s]* /, ''));
+        searches.push(postData.text.replace(/^nrdb:\s/i, ''));
     } else while ((found = cardFinder.exec(postData.text)) !== null) {
-        search.push(found[1]);
+        searches.push('!' + found[1]);
     }
 
-    if(search.length > 0) {
+    if(searches.length > 0) {
         // Find the card(s)
-        nrdb_cards.find(search, messages, function (o) {
-            if (o) {
-                res.json(o);
+        nrdb_cards.find(searches, messages, function (cards) {
+            var o = {text: '', attachments:[]};
+            for (var i = 0; i < cards.length; i++) {
+                var a = {};
+                var title;
+                if (i === 0) {
+                    o.text = cards[0].title;
+                    a.pretext = '';
+                } else {
+                    a.pretext = cards[i].title + '\n';
+                }
+
+                a.pretext += cards[i].pretext;
+                a.text = cards[i].text;
+                a.color = cards[i].color;
+                a.mrkdwn_in = ['text', 'pretext'];
+                o.attachments.push(a);
             }
-            else {
-                res.sendStatus(500);
-            }
+            res.json(o);
         });
     } else {
         res.sendStatus(200);
@@ -71,19 +83,20 @@ app.get('/', function (req, res) {
     }
 
     // Find the card(s)
-    nrdb_cards.find(getData.text, messages, function (o) {
-        res.type('text/plain');
-        if (o) {
-            // Write out the contents of the response object as plain text
-            res.write(o.text);
-            if (o.attachments) {
-                if (o.attachments[0].title)
-                    res.write(o.attachments[0].title) + '\n';
-                if (o.attachments[0].pretext)
-                    res.write(o.attachments[0].pretext) + '\n';
-                if (o.attachments[0].text) {
-                    res.write('\n>' + o.attachments[0].text.split('\n').join('\n>'));
-                }
+    nrdb_cards.find([getData.text], messages, function (cards) {
+        if (cards[0]) {
+            res.type('text/plain');
+            // Write out the response as plain text
+            if(cards[0].url) {
+                res.write('<' + cards[0].url + '|*' + cards[0].title + '*>\n');
+            } else {
+                res.write('*' + cards[0].title + '*\n');
+            }
+            if (cards[0].pretext) {
+                res.write(cards[0].pretext);
+            }
+            if (cards[0].text) {
+                res.write('\n>' + cards[0].text.replace(/\n/g, '\n>'));
             }
             res.end();
         } else {
