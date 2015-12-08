@@ -23,6 +23,7 @@ app.post('/', function (req, res) {
         return res.sendStatus(400);
     }
     var postData = req.body;
+    var search = null;
 
     // Ensure the request comes from an authorized source
     if (postData.token !== postToken) {
@@ -32,15 +33,16 @@ app.post('/', function (req, res) {
     if (!postData.text || !postData.text.length) {
         return res.json({'text': messages.NO_QUERY});
     }
-    console.info(postData.text);
     // Detect and remove the trigger word from the text
-    //TODO replace the trigger before deployment
-    if (postData.text.match(/^nrdbdev:/i)) {
-        postData.text = postData.text.replace(/\s*[^\s]* /, '');
-        console.info("Searching for "+postData.text);
+    if (postData.text.match(/^nrdb:/i)) {
+        search = postData.text.replace(/\s*[^\s]* /, '');
+    } else if (postData.text.match(/\[.*?\]/)) {
+        search = postData.text.replace(/.*?\[(.*?)\].*/g, '$1');
+    }
 
+    if(search) {
         // Find the card(s)
-        nrdb_cards.find(postData.text, messages, function (o) {
+        nrdb_cards.find(search, messages, function (o) {
             if (o) {
                 res.json(o);
             }
@@ -48,6 +50,8 @@ app.post('/', function (req, res) {
                 res.sendStatus(500);
             }
         });
+    } else {
+        res.sendStatus(200);
     }
 });
 
