@@ -10,7 +10,7 @@ var messages = {
     INVALID_TOKEN: 'Invalid token detected, deploying ICE\n↳ End the run',
     NO_QUERY: 'I can\'t find nothing, what\'s next? dividing by zero?',
     MULTIPLE_RESULTS: ' cards matched your search:',
-    NO_RESULTS: 'You successfully access R&D but it doesn\'t hold what you\'re looking for',
+    NO_RESULTS: 'You successfully access R&amp;D but it doesn\'t hold what you\'re looking for',
     TOO_MANY: ' results!? you tryna overflow my core buffers?'
 };
 
@@ -32,20 +32,23 @@ app.post('/', function (req, res) {
     if (!postData.text || !postData.text.length) {
         return res.json({'text': messages.NO_QUERY});
     }
-    // Remove the trigger word from the text
-    if (postData.trigger_word){
-        postData.text = postData.text.replace(postData.trigger_word + ' ', '');
-    }
+    console.info(postData.text);
+    // Detect and remove the trigger word from the text
+    //TODO replace the trigger before deployment
+    if (postData.text.replace(/\s*([^\s]*).*/, '$1').toLowerCase() === 'nrdbdev:'){
+        postData.text = postData.text.replace(/\s*[^\s]* /, '');
+        console.info("Searching for "+postData.text);
 
-    // Find the card(s)
-    nrdb_cards.find(postData.text, messages, function (o) {
-        if (o) {
-            res.json(o);
-        }
-        else {
-            res.sendStatus(500);
-        }
-    });
+        // Find the card(s)
+        nrdb_cards.find(postData.text, messages, function (o) {
+            if (o) {
+                res.json(o);
+            }
+            else {
+                res.sendStatus(500);
+            }
+        });
+    }
 });
 
 // GET request returns plain text
