@@ -35,7 +35,7 @@ app.post('/', function (req, res) {
     console.info(postData.text);
     // Detect and remove the trigger word from the text
     //TODO replace the trigger before deployment
-    if (postData.text.replace(/\s*([^\s]*).*/, '$1').toLowerCase() === 'nrdbdev:'){
+    if (postData.text.match(/^nrdbdev:/i)) {
         postData.text = postData.text.replace(/\s*[^\s]* /, '');
         console.info("Searching for "+postData.text);
 
