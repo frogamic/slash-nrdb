@@ -37,7 +37,7 @@ app.post('/', function (req, res) {
     }
     // Detect and remove the trigger word from the text
     if (postData.text.match(/^nrdb:/i)) {
-        searches.push(postData.text.replace(/^nrdb:\s/i, ''));
+        searches.push(postData.text.replace(/^nrdb:\s?/i, ''));
     } else while ((found = cardFinder.exec(postData.text)) !== null) {
         searches.push('!' + found[1]);
     }
