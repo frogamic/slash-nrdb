@@ -23,7 +23,9 @@ app.post('/', function (req, res) {
         return res.sendStatus(400);
     }
     var postData = req.body;
-    var search = null;
+    var search = [];
+    var cardFinder = new RegExp('.*?\\[(.*?)\\]', 'g');
+    var found;
 
     // Ensure the request comes from an authorized source
     if (postData.token !== postToken) {
@@ -35,12 +37,12 @@ app.post('/', function (req, res) {
     }
     // Detect and remove the trigger word from the text
     if (postData.text.match(/^nrdb:/i)) {
-        search = postData.text.replace(/\s*[^\s]* /, '');
-    } else if (postData.text.match(/\[.*?\]/)) {
-        search = postData.text.replace(/.*?\[(.*?)\].*/g, '$1');
+        search.push(postData.text.replace(/\s*[^\s]* /, ''));
+    } else while ((found = cardFinder.exec(postData.text)) !== null) {
+        search.push(found[1]);
     }
 
-    if(search) {
+    if(search.length > 0) {
         // Find the card(s)
         nrdb_cards.find(search, messages, function (o) {
             if (o) {

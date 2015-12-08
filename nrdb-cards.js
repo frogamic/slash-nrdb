@@ -31,7 +31,7 @@ var shorthandRegExp = new RegExp(
 /**
  * Finds one or more cards matching `text` from NetrunnerDB, and calls back
  * `responder` with an object representing the results.
- * @param {string}   text      The text to search for
+ * @param {array}    text      The text to search for
  * @param {Object}   messages  An object containing messages for responses
  * @param {Function} responder A method that will be called with the response after searching
  */
