@@ -35,16 +35,32 @@ var shorthandRegExp = new RegExp(
  * @param {Object}   messages  An object containing messages for responses
  * @param {Function} responder A method that will be called with the response after searching
  */
-exports.find = function (text, messages, responder) {
-    search(text, function ($, panel) {
-        responder([parseSingle($, panel, messages)]);
-    }, function ($, matches) {
-        responder([parseMultiple($, matches, messages)]);
-    }, function () {
-        responder([{'title': messages.NO_RESULTS}]);
-    }, function () {
-        responder(null);
-    });
+exports.find = function (searches, messages, responder) {
+    var cards = [];
+    var returns = 0;
+    for (var i = 0; i < searches.length; i++) {
+        search(searches[i], function ($, panel) {
+            cards.push(parseSingle($, panel, messages));
+            if (++returns === searches.length) {
+                responder(cards);
+            }
+        }, function ($, matches) {
+            cards.push(parseMultiple($, matches, messages));
+            if (++returns === searches.length) {
+                responder(cards);
+            }
+        }, function () {
+            cards.push({'title': messages.NO_RESULTS});
+            if (++returns === searches.length) {
+                responder(cards);
+            }
+        }, function () {
+            cards.push(null);
+            if (++returns === searches.length) {
+                responder(cards);
+            }
+        });
+    }
 }
 
 /**
@@ -88,7 +104,7 @@ function parseSingle ($, panel) {
     // Get the first word from the text containing the faction
     var faction = clean(panel.find('.card-illustrator').text()).replace(/ .*/, '');
 
-    o.title = '<' + panel.find('a.card-title').attr('href') + '|*' + title + '*>';
+    o.title = '<' + panel.find('a.card-title').attr('href') + '|*\u200b' + title + '\u200b*>';
     o.pretext = formatCardInfo(clean(panel.find('.card-info').text()), faction);
     panel.find('.card-text p').each(function (i, p) {
         var text = clean($(p).text());
@@ -126,7 +142,7 @@ function formatCardInfo(info, faction) {
     // Rejoin info text with newline after type/faction
     info = info[0] + '\n' + info.slice(1).join(' - ');
     // Bolden the primary type
-    info = info.replace(/^(.*?)(\n|:)/, '*$1*$2');
+    info = info.replace(/^(.*?)(\n|:)/, '*\u200b$1\u200b*$2');
     // Replace most stat names with emoji
     info = info.replace(/Memory: (\d)/, ':_$1mu:');
     info = info.replace(/Strength: (\d+)/, '$1 Str');
@@ -166,7 +182,7 @@ function substitute (body) {
     body = body.replace(/<span class="icon icon-([1-3])mu"><\/span>/g, ':_$1mu:');
     body = body.replace(/<span class="icon icon-recurring-credit"><\/span>/g, ':_recurringcredit:');
     body = body.replace(/<span class="icon icon-subroutine"><\/span>/g, ':_subroutine:');
-    body = body.replace(/<\/?strong>/g, '*');
+    body = body.replace(/<\/?strong>/g, '\u200b*\u200b');
     body = body.replace(/<sup>(?:\d+|X)<\/sup>/g, function(x){
         x = x.replace(/<sup>|<\/sup>/g, '');
         x = x.replace('X','ˣ');
@@ -187,12 +203,11 @@ function substitute (body) {
  * @param {Function} noResults Callback if no cards are found
  * @param {Function} errorResult Callback if there was an error
  */
-function search (texts, oneResult, manyResults, noResults, errorResult) {
+function search (text, oneResult, manyResults, noResults, errorResult) {
     oneResult = oneResult || _noop;
     manyResults = manyResults || _noop;
     noResults = noResults || _noop;
     errorResult = errorResult || _noop;
-    var text = texts[0];
 
     // If forceful mode is on, pick any exact match when there are multiples
     var forceful = false;

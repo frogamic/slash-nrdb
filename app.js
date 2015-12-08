@@ -45,6 +45,7 @@ app.post('/', function (req, res) {
     if(searches.length > 0) {
         // Find the card(s)
         nrdb_cards.find(searches, messages, function (cards) {
+            console.info(cards);
             var o = {text: '', attachments:[]};
             for (var i = 0; i < cards.length; i++) {
                 var a = {};
