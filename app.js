@@ -34,7 +34,7 @@ app.post('/', function (req, res) {
     }
     // Remove the trigger word from the text
     if (postData.trigger_word){
-        postData.text = postData.text.replace(postData.trigger_word + ' ', '');
+        postData.text = postData.text.replace(new RegExp(postData.trigger_word + '\\s*'), '');
     }
 
     // Find the card(s)
@@ -63,20 +63,8 @@ app.get('/', function (req, res) {
 
     // Find the card(s)
     nrdb_cards.find(getData.text, messages, function (o) {
-        res.type('text/plain');
         if (o) {
-            // Write out the contents of the response object as plain text
-            res.write(o.text);
-            if (o.attachments) {
-                if (o.attachments[0].title)
-                    res.write(o.attachments[0].title) + '\n';
-                if (o.attachments[0].pretext)
-                    res.write(o.attachments[0].pretext) + '\n';
-                if (o.attachments[0].text) {
-                    res.write('\n>' + o.attachments[0].text.split('\n').join('\n>'));
-                }
-            }
-            res.end();
+            res.json(o);
         } else {
             res.sendStatus(500);
         }
