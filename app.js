@@ -1,5 +1,6 @@
 var express = require('express');
 var bodyParser = require('body-parser');
+var request = require('request');
 
 var nrdb_cards = require('./nrdb-cards.js');
 
@@ -58,16 +59,15 @@ app.get('/', function (req, res) {
     }
     // Ensure that the request contains a valid query
     if (!getData.text || !getData.text.length) {
-        return res.json(messages.NO_QUERY);
+        return res.send(messages.NO_QUERY);
     }
 
     // Find the card(s)
     nrdb_cards.find(getData.text, messages, function (o) {
         if (o) {
-            res.json(o);
-        } else {
-            res.sendStatus(500);
+            request({url: getData.response_url, method:"POST", json: true, body: o});
         }
+        res.sendStatus(200);
     });
 });
 
