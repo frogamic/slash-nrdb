@@ -53,6 +53,7 @@ app.post('/', function (req, res) {
 app.get('/', function (req, res) {
     var getData = req.query;
 
+    res.type('text/plain');
     // Ensure the request comes from an authorized source
     if (getData.token !== getToken) {
         return res.send(messages.INVALID_TOKEN);
@@ -67,7 +68,7 @@ app.get('/', function (req, res) {
         if (o) {
             request({url: getData.response_url, method:"POST", json: true, body: o});
         }
-        res.sendStatus(200);
+        res.send('');
     });
 });
 
