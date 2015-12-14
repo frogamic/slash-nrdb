@@ -135,10 +135,10 @@ function formatCardInfo(info, faction) {
     info = info.replace(/^(.*?)(\n|:)/, '*$1*$2');
     // Replace most stat names with emoji
     info = info.replace(/Memory: (\d)/, ':_$1mu:');
-    info = info.replace(/Strength: (\d+)/, '$1 Str');
+    info = info.replace(/Strength: (\d+)/, '$1 str');
     info = info.replace(/(?:Install|Cost): (\d+)/, '$1:_credit:');
     info = info.replace(/Rez: (\d+)/, '$1:_rez:');
-    info = info.replace(/Adv: (\d+)/, '$1 Adv');
+    info = info.replace(/Adv: (\d+)/, '$1:_advance:');
     info = info.replace(/Score: (\d+)/, '$1:_agenda:');
     info = info.replace(/Trash: (\d+)/, '$1:_trash:');
     info = info.replace(/Link: (\d+)/, '$1:_link:');
@@ -167,9 +167,11 @@ function substitute (body) {
     body = body.replace(/<span class="icon icon-credit"><\/span>/g, ':_credit:');
     body = body.replace(/<span class="icon icon-trash"><\/span>/g, ':_trash:');
     body = body.replace(/<span class="icon icon-link"><\/span>/g, ':_link:');
-    body = body.replace(/([1-3])<span class="icon icon-mu"><\/span>/g, ':_$1mu:');
+    body = body.replace(/([0-4X])<span class="icon icon-mu"><\/span>/g, ':_$1mu:');
     body = body.replace(/<span class="icon icon-mu"><\/span>/g, ':_mu:');
-    body = body.replace(/<span class="icon icon-([1-3])mu"><\/span>/g, ':_$1mu:');
+    body = body.replace(/<span class="icon icon-([0-4X])mu"><\/span>/g, function (x) {
+        return x.replace(/(.).*/, ':$1mu:').toLowerCase();
+    });
     body = body.replace(/<span class="icon icon-recurring-credit"><\/span>/g, ':_recurringcredit:');
     body = body.replace(/<span class="icon icon-subroutine"><\/span>/g, ':_subroutine:');
     body = body.replace(/<\/?strong>/g, '*');
